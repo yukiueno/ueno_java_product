@@ -5,23 +5,54 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class PairwiseAlignment {
+    static boolean LOCAL = true;
+    static int AlignType = -1;
+    static int MatchScore = 2;
+    static int GapPenalty = -2;
+    static int MismatchPenalty = -1;
+
     public static void main (String[] args) {
         String[] sequence1;
         String[] sequence2;
 
-        if (args.length == 0 || args.length > 2) {
-            System.out.print("Randam sequence test.\n");
+        if (args.length > 0) {
+            switch (args[0]) {
+            case "-global":
+                LOCAL = false;
+                if ( 1 < args.length ) {
+                    switch (args[1]) {
+                    case "":
+                        int array_size1 = new Random().nextInt(20);
+                        int array_size2 = new Random().nextInt(20);
+                        sequence1 = makeSequence(array_size1);
+                        sequence2 = makeSequence(array_size2);
+                        break;
+                    default :
+                        sequence1 = readFasta(args[1]);
+                        sequence2 = readFasta(args[1]);
+                    }
+                } else {
+                    int array_size1 = new Random().nextInt(20);
+                    int array_size2 = new Random().nextInt(20);
+                    sequence1 = makeSequence(array_size1);
+                    sequence2 = makeSequence(array_size2);
+                }
+                break;
+            case "":
+                int array_size1 = new Random().nextInt(20);
+                int array_size2 = new Random().nextInt(20);
+                sequence1 = makeSequence(array_size1);
+                sequence2 = makeSequence(array_size2);
+                break;
+            default :
+                sequence1 = readFasta(args[0]);
+                sequence2 = readFasta(args[0]);
+            }
+        } else {
             int array_size1 = new Random().nextInt(20);
             int array_size2 = new Random().nextInt(20);
             sequence1 = makeSequence(array_size1);
             sequence2 = makeSequence(array_size2);
-        }else if (args.length == 1){
-            int array_size2 = new Random().nextInt(20);
-            sequence1 = readFasta(args[0]);
-            sequence2 = makeSequence(array_size2);
-        }else{
-            sequence1 = readFasta(args[0]);
-            sequence2 = readFasta(args[0]);
         }
 
         int[][] scoreMatrix = makeScoreMatrix(sequence1, sequence2);
@@ -31,7 +62,7 @@ public class PairwiseAlignment {
 
     public static String[] readFasta(String file) {
         int i = 0;
-        String[] read = new String[100];
+        String[] read = new String[100000];
         try{
             FileReader filereader = new FileReader(file);
 
@@ -70,13 +101,24 @@ public class PairwiseAlignment {
         return arr;
     }
 
+    public static int max_of_three(int x, int y, int z) {
+        int t = x > y ? x : y;
+        return (t > z ? t : z);
+    }
+
+    public static int max_of_four(int x, int y, int z, int w) {
+        int t = x > y ? x : y;
+        int s = z > w ? z : w;
+        return (t > s ? t : s);
+    }
+
     public static int[][] initializeScoreMatrix(int scoreMatrix[][]) {
         scoreMatrix[0][0] = 0;
         for(int i = 1;i < scoreMatrix.length; i++){
-            scoreMatrix[i][0] = scoreMatrix[i-1][0] - 2;
+            scoreMatrix[i][0] = scoreMatrix[i-1][0] + GapPenalty;
         }
         for(int j = 1;j < scoreMatrix[0].length; j++){
-            scoreMatrix[0][j] = scoreMatrix[0][j-1] - 2;
+            scoreMatrix[0][j] = scoreMatrix[0][j-1] + GapPenalty;
         }
         return scoreMatrix;
     }
@@ -97,31 +139,25 @@ public class PairwiseAlignment {
     }
 
     public static int[][] makeScoreMatrix(String[] sequence1, String[] sequence2) {
-        int score = 0;
         int[][] scoreMatrix = new int[sequence1.length][sequence2.length];
 
         initializeScoreMatrix(scoreMatrix);
 
         for(int i = 1;i < scoreMatrix.length; i++){
             for(int j = 1;j < scoreMatrix[0].length; j++){
-                int point_score = 0;
-                int gap_score = 0;
-                if(sequence1[i] == sequence2[j]){
-                    point_score = scoreMatrix[i-1][j-1] + 2;
-                }else{
-                    point_score = scoreMatrix[i-1][j-1] - 1;
-                }
-
-                if(scoreMatrix[i-1][j] < scoreMatrix[i][j-1]){
-                    gap_score = scoreMatrix[i][j-1] - 2;
-                }else{
-                    gap_score = scoreMatrix[i-1][j] - 2;
-                }
-
-                if(point_score < gap_score){
-                    scoreMatrix[i][j] = gap_score;
-                }else{
-                    scoreMatrix[i][j] = point_score;
+                if ( LOCAL ) {
+                    scoreMatrix[i][j] = max_of_three(
+                        scoreMatrix[i][j-1] + GapPenalty,
+                        scoreMatrix[i-1][j] + GapPenalty,
+                        scoreMatrix[i-1][j-1] + (sequence1[i] == sequence2[j] ? MatchScore : MismatchPenalty)
+                    );
+                } else {
+                    scoreMatrix[i][j] = max_of_four(
+                        0,
+                        scoreMatrix[i][j-1] + GapPenalty,
+                        scoreMatrix[i-1][j] + GapPenalty,
+                        scoreMatrix[i-1][j-1] + (sequence1[i] == sequence2[j] ? MatchScore : MismatchPenalty)
+                    );
                 }
             }
         }
@@ -131,8 +167,7 @@ public class PairwiseAlignment {
 
     public static String[] traceback(int[][] scoreMatrix, String[] sequence1, String[] sequence2) {
         int x = scoreMatrix.length - 1, y = scoreMatrix[0].length - 1;
-          // Search for the maximum score brute-force (very inefficient).
-          // The max score can be recorded when computing scoreMatrix.
+
         StringBuffer line1 = new StringBuffer();
         StringBuffer line2 = new StringBuffer();
         line1.append(':');
@@ -168,7 +203,7 @@ public class PairwiseAlignment {
         sb.append("  ");
         for (int i = 2; x.charAt(i) != ':'; i++)
           sb.append(x.charAt(i) == y.charAt(i) ? "|" : " ");
-        sb.append("    ");
+        sb.append("  ");
         String z = sb.toString();
         int width = 50;
         int i = -1;
