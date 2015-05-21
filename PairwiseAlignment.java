@@ -110,11 +110,12 @@ public class PairwiseAlignment {
 
     public static int[][] initializeScoreMatrix(int scoreMatrix[][]) {
         scoreMatrix[0][0] = 0;
-        for(int i = 1;i < scoreMatrix.length; i++){
-            scoreMatrix[i][0] = LOCAL ? ( scoreMatrix[i-1][0] + GapPenalty ) : 0;
-        }
-        for(int j = 1;j < scoreMatrix[0].length; j++){
-            scoreMatrix[0][j] = LOCAL ? ( scoreMatrix[0][j-1] + GapPenalty ) : 0;
+        if ( LOCAL ){
+            for(int i = 1;i < scoreMatrix.length; i++){ scoreMatrix[i][0] = scoreMatrix[i-1][0] + GapPenalty;}
+            for(int j = 1;j < scoreMatrix[0].length; j++){ scoreMatrix[0][j] = scoreMatrix[0][j-1] + GapPenalty;}
+        } else {
+            for(int i = 1;i < scoreMatrix.length; i++){ scoreMatrix[i][0] = 0; }
+            for(int j = 1;j < scoreMatrix[0].length; j++){ scoreMatrix[0][j] = 0; }
         }
         return scoreMatrix;
     }
@@ -124,15 +125,19 @@ public class PairwiseAlignment {
 
         initializeScoreMatrix(scoreMatrix);
 
-        for(int i = 1;i < scoreMatrix.length; i++){
-            for(int j = 1;j < scoreMatrix[0].length; j++){
-                if ( LOCAL ) {
+        if ( LOCAL  ) {
+            for(int i = 1;i < scoreMatrix.length; i++){
+                for(int j = 1;j < scoreMatrix[0].length; j++){
                     scoreMatrix[i][j] = max_of_three(
                         scoreMatrix[i][j-1] + GapPenalty,
                         scoreMatrix[i-1][j] + GapPenalty,
                         scoreMatrix[i-1][j-1] + (sequence1[i] == sequence2[j] ? MatchScore : MismatchPenalty)
                     );
-                } else {
+                }
+            }
+        } else {
+            for(int i = 1;i < scoreMatrix.length; i++){
+                for(int j = 1;j < scoreMatrix[0].length; j++){
                     scoreMatrix[i][j] = max_of_four(
                         0,
                         scoreMatrix[i][j-1] + GapPenalty,
