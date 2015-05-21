@@ -1,9 +1,3 @@
-import java.util.Random;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
 public class PairwiseAlignment {
     static boolean LOCAL = true;
     static int AlignType = -1;
@@ -12,89 +6,18 @@ public class PairwiseAlignment {
     static int MismatchPenalty = -1;
 
     public static void main (String[] args) {
+        if (args.length > 0) { LOCAL = !args[0].equals("-global"); }
+
         String[] sequence1;
         String[] sequence2;
-        sequence1 = getSequenceByOptionLength(args);
-        sequence2 = getSequenceByOptionLength(args);
+
+        sequence1 = SetSequence.getSequenceByOption(args);
+        sequence2 = SetSequence.getSequenceByOption2(args);
 
         int[][] scoreMatrix = makeScoreMatrix(sequence1, sequence2);
         String[] traceback = traceback(scoreMatrix, sequence1, sequence2);
+
         printTrace(traceback);
-    }
-
-    public static String[] getSequenceByOptionLength(String[] options) {
-        String[] sequence;
-        if ( options.length > 0) {
-            sequence = getSequenceByOptionType(options[0]);
-            if ( options.length > 1 ) {
-                sequence = getSequenceByOptionType(options[1]);
-            } else {
-                sequence = makeRandomSequence(20);
-            }
-        } else {
-            sequence = makeRandomSequence(20);
-        }
-        return sequence;
-    }
-
-    public static String[] getSequenceByOptionType(String option) {
-        String[] sequence;
-        switch ( option ) {
-        case "-global":
-            LOCAL = false;
-        case "":
-            sequence = makeRandomSequence(20);
-            break;
-        default:
-            sequence = readFasta(option);
-        }
-        return sequence;
-    }
-
-    public static String[] readFasta(String file) {
-        int i = 0;
-        String[] read = new String[100000];
-        try{
-            FileReader filereader = new FileReader(file);
-
-            int mozi;
-            while((mozi = filereader.read()) != -1){
-                if(String.valueOf((char)mozi) != null) {
-                    System.out.print((char)mozi);
-                    read[i] = String.valueOf((char)mozi);
-                    i++;
-                }
-           }
-
-           filereader.close();
-        }catch(FileNotFoundException e){
-           System.out.println(e);
-        }catch(IOException e){
-           System.out.println(e);
-        }
-        String[] sequence = new String[i];
-        for(int j = 1;j < i; j++){
-            sequence[j] = read[j - 1];
-        }
-        sequence[0] = "0";
-        return sequence;
-    }
-
-    public static String[] makeSequence(int array_size) {
-        String[] arr = new String[array_size];
-        String[] sequence_type = new String[]{"A","T","G","C"};
-
-        for(int i = 1;i < array_size; i++){
-            int r = new Random().nextInt(sequence_type.length);
-            arr[i] = sequence_type[r];
-        }
-        arr[0] = "0";
-        return arr;
-    }
-
-    public static String[] makeRandomSequence(int array_size) {
-        int random_array_size = new Random().nextInt(array_size);
-        return makeSequence(random_array_size);
     }
 
     public static int max_of_three(int x, int y, int z) {
@@ -131,7 +54,7 @@ public class PairwiseAlignment {
                     scoreMatrix[i][j] = max_of_three(
                         scoreMatrix[i][j-1] + GapPenalty,
                         scoreMatrix[i-1][j] + GapPenalty,
-                        scoreMatrix[i-1][j-1] + (sequence1[i] == sequence2[j] ? MatchScore : MismatchPenalty)
+                        scoreMatrix[i-1][j-1] + (sequence1[i].equals(sequence2[j]) ? MatchScore : MismatchPenalty)
                     );
                 }
             }
@@ -142,7 +65,7 @@ public class PairwiseAlignment {
                         0,
                         scoreMatrix[i][j-1] + GapPenalty,
                         scoreMatrix[i-1][j] + GapPenalty,
-                        scoreMatrix[i-1][j-1] + (sequence1[i] == sequence2[j] ? MatchScore : MismatchPenalty)
+                        scoreMatrix[i-1][j-1] + (sequence1[i].equals(sequence2[j]) ? MatchScore : MismatchPenalty)
                     );
                 }
             }
