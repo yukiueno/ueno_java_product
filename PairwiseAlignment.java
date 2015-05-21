@@ -14,50 +14,41 @@ public class PairwiseAlignment {
     public static void main (String[] args) {
         String[] sequence1;
         String[] sequence2;
-
-        if (args.length > 0) {
-            switch (args[0]) {
-            case "-global":
-                LOCAL = false;
-                if ( 1 < args.length ) {
-                    switch (args[1]) {
-                    case "":
-                        int array_size1 = new Random().nextInt(20);
-                        int array_size2 = new Random().nextInt(20);
-                        sequence1 = makeSequence(array_size1);
-                        sequence2 = makeSequence(array_size2);
-                        break;
-                    default :
-                        sequence1 = readFasta(args[1]);
-                        sequence2 = readFasta(args[1]);
-                    }
-                } else {
-                    int array_size1 = new Random().nextInt(20);
-                    int array_size2 = new Random().nextInt(20);
-                    sequence1 = makeSequence(array_size1);
-                    sequence2 = makeSequence(array_size2);
-                }
-                break;
-            case "":
-                int array_size1 = new Random().nextInt(20);
-                int array_size2 = new Random().nextInt(20);
-                sequence1 = makeSequence(array_size1);
-                sequence2 = makeSequence(array_size2);
-                break;
-            default :
-                sequence1 = readFasta(args[0]);
-                sequence2 = readFasta(args[0]);
-            }
-        } else {
-            int array_size1 = new Random().nextInt(20);
-            int array_size2 = new Random().nextInt(20);
-            sequence1 = makeSequence(array_size1);
-            sequence2 = makeSequence(array_size2);
-        }
+        sequence1 = getSequenceByOptionLength(args);
+        sequence2 = getSequenceByOptionLength(args);
 
         int[][] scoreMatrix = makeScoreMatrix(sequence1, sequence2);
         String[] traceback = traceback(scoreMatrix, sequence1, sequence2);
         printTrace(traceback);
+    }
+
+    public static String[] getSequenceByOptionLength(String[] options) {
+        String[] sequence;
+        if ( options.length > 0) {
+            sequence = getSequenceByOptionType(options[0]);
+            if ( options.length > 1 ) {
+                sequence = getSequenceByOptionType(options[1]);
+            } else {
+                sequence = makeRandomSequence(20);
+            }
+        } else {
+            sequence = makeRandomSequence(20);
+        }
+        return sequence;
+    }
+
+    public static String[] getSequenceByOptionType(String option) {
+        String[] sequence;
+        switch ( option ) {
+        case "-global":
+            LOCAL = false;
+        case "":
+            sequence = makeRandomSequence(20);
+            break;
+        default:
+            sequence = readFasta(option);
+        }
+        return sequence;
     }
 
     public static String[] readFasta(String file) {
@@ -101,6 +92,11 @@ public class PairwiseAlignment {
         return arr;
     }
 
+    public static String[] makeRandomSequence(int array_size) {
+        int random_array_size = new Random().nextInt(array_size);
+        return makeSequence(random_array_size);
+    }
+
     public static int max_of_three(int x, int y, int z) {
         int t = x > y ? x : y;
         return (t > z ? t : z);
@@ -115,27 +111,12 @@ public class PairwiseAlignment {
     public static int[][] initializeScoreMatrix(int scoreMatrix[][]) {
         scoreMatrix[0][0] = 0;
         for(int i = 1;i < scoreMatrix.length; i++){
-            scoreMatrix[i][0] = scoreMatrix[i-1][0] + GapPenalty;
+            scoreMatrix[i][0] = LOCAL ? ( scoreMatrix[i-1][0] + GapPenalty ) : 0;
         }
         for(int j = 1;j < scoreMatrix[0].length; j++){
-            scoreMatrix[0][j] = scoreMatrix[0][j-1] + GapPenalty;
+            scoreMatrix[0][j] = LOCAL ? ( scoreMatrix[0][j-1] + GapPenalty ) : 0;
         }
         return scoreMatrix;
-    }
-
-    public static void printScoreMatrix(int scoreMatrix[][], String[] sequence1, String[] sequence2) {
-        System.out.print("\t");
-        for(int j = 0;j < scoreMatrix[0].length; j++){
-            System.out.print(sequence2[j] + "\t");
-        }
-        System.out.println("\n");
-        for(int i = 0;i < scoreMatrix.length; i++){
-            System.out.print(sequence1[i] + "\t");
-            for(int j = 0;j < scoreMatrix[0].length; j++){
-               System.out.print(scoreMatrix[i][j] + "\t");
-            }
-            System.out.println("\n");
-        }
     }
 
     public static int[][] makeScoreMatrix(String[] sequence1, String[] sequence2) {
@@ -163,6 +144,21 @@ public class PairwiseAlignment {
         }
         printScoreMatrix(scoreMatrix, sequence1, sequence2);
         return scoreMatrix;
+    }
+
+    public static void printScoreMatrix(int scoreMatrix[][], String[] sequence1, String[] sequence2) {
+        System.out.print("\t");
+        for(int j = 0;j < scoreMatrix[0].length; j++){
+            System.out.print(sequence2[j] + "\t");
+        }
+        System.out.println("\n");
+        for(int i = 0;i < scoreMatrix.length; i++){
+            System.out.print(sequence1[i] + "\t");
+            for(int j = 0;j < scoreMatrix[0].length; j++){
+               System.out.print(scoreMatrix[i][j] + "\t");
+            }
+            System.out.println("\n");
+        }
     }
 
     public static String[] traceback(int[][] scoreMatrix, String[] sequence1, String[] sequence2) {
