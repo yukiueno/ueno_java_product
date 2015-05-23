@@ -6,11 +6,12 @@ import java.io.IOException;
 
 public class SetSequence {
     static boolean LOCAL = true;
+    static int SIZE = 20;
     public static String[] getSequenceByOption(String[] options) {
-        String[] sequence = makeRandomSequence(20);
+        String[] sequence = makeRandomSequence(SIZE);
         switch ( options.length ) {
         case 0:
-            sequence = makeRandomSequence(20);
+            sequence = makeRandomSequence(SIZE);
             break;
         case 1:
             sequence = getSequenceByOptionType(options[0]);
@@ -26,10 +27,10 @@ public class SetSequence {
     }
 
     public static String[] getSequenceByOption2(String[] options) {
-        String[] sequence = makeRandomSequence(20);
+        String[] sequence = makeRandomSequence(SIZE);
         switch ( options.length ) {
         case 0:
-            sequence = makeRandomSequence(20);
+            sequence = makeRandomSequence(SIZE);
             break;
         case 1:
             sequence = getSequenceByOptionType(options[0]);
@@ -49,13 +50,13 @@ public class SetSequence {
     }
 
     public static String[] getSequenceByOptionType(String option) {
-        String[] sequence = makeRandomSequence(20);
+        String[] sequence = makeRandomSequence(SIZE);
         switch ( option ) {
         case "-global":
             LOCAL = false;
             break;
         case "":
-            sequence = makeRandomSequence(20);
+            sequence = makeRandomSequence(SIZE);
             break;
         default:
             sequence = readFasta(option);
