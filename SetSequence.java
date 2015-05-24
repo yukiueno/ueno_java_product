@@ -33,10 +33,12 @@ public class SetSequence {
             sequence = makeRandomSequence(SIZE);
             break;
         case 1:
-            sequence = getSequenceByOptionType(options[0]);
+            sequence = makeRandomSequence(SIZE);
             break;
         case 2:
-            if (options[0].equals("-global")){
+            if ( options[0].equals("-global") ){
+                sequence = getSequenceByOptionType(options[1]);
+            } else if ( options[0].equals("-affine") ) {
                 sequence = getSequenceByOptionType(options[1]);
             } else {
                 sequence = getSequenceByOptionType(options[0]);
@@ -53,7 +55,8 @@ public class SetSequence {
         String[] sequence = makeRandomSequence(SIZE);
         switch ( option ) {
         case "-global":
-            LOCAL = false;
+            break;
+        case "-affine":
             break;
         case "":
             sequence = makeRandomSequence(SIZE);

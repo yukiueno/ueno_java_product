@@ -1,5 +1,7 @@
 public class PairwiseAlignment {
-    static boolean LOCAL = true;
+    static boolean LOCAL = false;
+    static boolean GLOBAL = false;
+    static boolean AFFINE = false;
     static int AlignType = -1;
     static int MatchScore = 2;
     static int GapPenalty = -2;
@@ -7,15 +9,14 @@ public class PairwiseAlignment {
     static int GrouthPenalty = -1;
 
     public static void main (String[] args) {
-        if (args.length > 0) { LOCAL = !args[0].equals("-global"); }
+        if (args.length > 0) { LOCAL = args[0].equals("-local"); }
+        if (args.length > 0) { GLOBAL = args[0].equals("-global"); }
+        if (args.length > 0) { AFFINE = args[0].equals("-affine");  }
 
-        String[] sequence1;
-        String[] sequence2;
+        String[] sequence1 = SetSequence.getSequenceByOption(args);
+        String[] sequence2 = SetSequence.getSequenceByOption2(args);
 
-        sequence1 = SetSequence.getSequenceByOption(args);
-        sequence2 = SetSequence.getSequenceByOption2(args);
-
-        int[][] scoreMatrix = makeAffineScoreMatrix(sequence1, sequence2);
+        int[][] scoreMatrix = makeScoreMatrix(sequence1, sequence2);
         String[] traceback = traceback(scoreMatrix, sequence1, sequence2);
 
         printTrace(traceback);
@@ -35,17 +36,31 @@ public class PairwiseAlignment {
     public static int[][] initializeScoreMatrix(int scoreMatrix[][]) {
         scoreMatrix[0][0] = 0;
         if ( LOCAL ){
-            for(int i = 1;i < scoreMatrix.length; i++){ scoreMatrix[i][0] = scoreMatrix[i-1][0] + GapPenalty;}
-            for(int j = 1;j < scoreMatrix[0].length; j++){ scoreMatrix[0][j] = scoreMatrix[0][j-1] + GapPenalty;}
+            initializeByLocal(scoreMatrix);
+        } else if ( GLOBAL ) {
+            initializeByGlobal(scoreMatrix);
+        } else if ( AFFINE ) {
+            initializeByAffine(scoreMatrix);
         } else {
-            for(int i = 1;i < scoreMatrix.length; i++){ scoreMatrix[i][0] = 0; }
-            for(int j = 1;j < scoreMatrix[0].length; j++){ scoreMatrix[0][j] = 0; }
+            System.out.println("No option. So do alignment by local.");
+            initializeByLocal(scoreMatrix);
         }
         return scoreMatrix;
     }
 
-    public static int[][] initializeAffineScoreMatrix(int scoreMatrix[][]) {
-        scoreMatrix[0][0] = 0;
+    public static int[][] initializeByLocal(int scoreMatrix[][]) {
+        for(int i = 1;i < scoreMatrix.length; i++){ scoreMatrix[i][0] = scoreMatrix[i-1][0] + GapPenalty;}
+        for(int j = 1;j < scoreMatrix[0].length; j++){ scoreMatrix[0][j] = scoreMatrix[0][j-1] + GapPenalty;}
+        return scoreMatrix;
+    }
+
+    public static int[][] initializeByGlobal(int scoreMatrix[][]) {
+        for(int i = 1;i < scoreMatrix.length; i++){ scoreMatrix[i][0] = 0; }
+        for(int j = 1;j < scoreMatrix[0].length; j++){ scoreMatrix[0][j] = 0; }
+        return scoreMatrix;
+    }
+
+    public static int[][] initializeByAffine(int scoreMatrix[][]) {
         for(int i = 1;i < scoreMatrix.length; i++){ scoreMatrix[i][0] = scoreMatrix[i-1][0] + GapPenalty + (i - 1) * GrouthPenalty;}
         for(int j = 1;j < scoreMatrix[0].length; j++){ scoreMatrix[0][j] = scoreMatrix[0][j-1] + GapPenalty + (j - 1) * GrouthPenalty;}
         return scoreMatrix;
@@ -53,38 +68,48 @@ public class PairwiseAlignment {
 
     public static int[][] makeScoreMatrix(String[] sequence1, String[] sequence2) {
         int[][] scoreMatrix = new int[sequence1.length][sequence2.length];
-
         initializeScoreMatrix(scoreMatrix);
 
         if ( LOCAL  ) {
-            for(int i = 1;i < scoreMatrix.length; i++){
-                for(int j = 1;j < scoreMatrix[0].length; j++){
-                    scoreMatrix[i][j] = max_of_three(
-                        scoreMatrix[i][j-1] + GapPenalty,
-                        scoreMatrix[i-1][j] + GapPenalty,
-                        scoreMatrix[i-1][j-1] + (sequence1[i].equals(sequence2[j]) ? MatchScore : MismatchPenalty)
-                    );
-                }
-            }
+            makeScoreByLocal(scoreMatrix, sequence1, sequence2);
+        } else if ( GLOBAL ) {
+            makeScoreByGlobal(scoreMatrix, sequence1, sequence2);
+        } else if ( AFFINE ) {
+            makeScoreByAffine(scoreMatrix, sequence1, sequence2);
         } else {
-            for(int i = 1;i < scoreMatrix.length; i++){
-                for(int j = 1;j < scoreMatrix[0].length; j++){
-                    scoreMatrix[i][j] = max_of_four(
-                        0,
-                        scoreMatrix[i][j-1] + GapPenalty,
-                        scoreMatrix[i-1][j] + GapPenalty,
-                        scoreMatrix[i-1][j-1] + (sequence1[i].equals(sequence2[j]) ? MatchScore : MismatchPenalty)
-                    );
-                }
+            makeScoreByLocal(scoreMatrix, sequence1, sequence2);
+        }
+        return scoreMatrix;
+    }
+
+    public static int[][] makeScoreByLocal(int[][] scoreMatrix, String[] sequence1, String[] sequence2) {
+        for(int i = 1;i < scoreMatrix.length; i++){
+            for(int j = 1;j < scoreMatrix[0].length; j++){
+                scoreMatrix[i][j] = max_of_three(
+                    scoreMatrix[i][j-1] + GapPenalty,
+                    scoreMatrix[i-1][j] + GapPenalty,
+                    scoreMatrix[i-1][j-1] + (sequence1[i].equals(sequence2[j]) ? MatchScore : MismatchPenalty)
+                );
             }
         }
         return scoreMatrix;
     }
 
-    public static int[][] makeAffineScoreMatrix(String[] sequence1, String[] sequence2) {
-        int[][] scoreMatrix = new int[sequence1.length][sequence2.length];
-        initializeAffineScoreMatrix(scoreMatrix);
+    public static int[][] makeScoreByGlobal(int[][] scoreMatrix, String[] sequence1, String[] sequence2) {
+        for(int i = 1;i < scoreMatrix.length; i++){
+            for(int j = 1;j < scoreMatrix[0].length; j++){
+                scoreMatrix[i][j] = max_of_four(
+                    0,
+                    scoreMatrix[i][j-1] + GapPenalty,
+                    scoreMatrix[i-1][j] + GapPenalty,
+                    scoreMatrix[i-1][j-1] + (sequence1[i].equals(sequence2[j]) ? MatchScore : MismatchPenalty)
+                );
+            }
+        }
+        return scoreMatrix;
+    }
 
+    public static int[][] makeScoreByAffine(int[][] scoreMatrix, String[] sequence1, String[] sequence2) {
         for(int i = 1;i < scoreMatrix.length; i++){
             for(int j = 1;j < scoreMatrix[0].length; j++) {
                 if ( i > 1 && j > 1){
