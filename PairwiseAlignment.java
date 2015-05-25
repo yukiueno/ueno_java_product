@@ -18,6 +18,7 @@ public class PairwiseAlignment {
 
         int[][] scoreMatrix = makeScoreMatrix(sequence1, sequence2);
         String[] traceback = traceback(scoreMatrix, sequence1, sequence2);
+        if ( AFFINE ) { traceback = tracebackForAffine(scoreMatrix, sequence1, sequence2); }
 
         printTrace(traceback);
     }
@@ -144,7 +145,7 @@ public class PairwiseAlignment {
     public static int makeAffineGapScoreY(int[][] scoreMatrix, int x, int y) {
         int gap = 1;
         do {
-            if (scoreMatrix[x][y - 1] + GapPenalty == scoreMatrix[x][y]) {
+            if (scoreMatrix[x][y - gap] + GapPenalty == scoreMatrix[x][y]) {
                 return scoreMatrix[x][y - gap] + GapPenalty + (gap - 1) * GrouthPenalty;
             } else if (scoreMatrix[x][y] + GapPenalty + (gap - 1) * GrouthPenalty == scoreMatrix[x][y]) {
                 gap++;
@@ -161,13 +162,13 @@ public class PairwiseAlignment {
         for(int j = 0;j < scoreMatrix[0].length; j++){
             System.out.print(sequence2[j] + "\t");
         }
-        System.out.println("\n");
+        System.out.print("\n");
         for(int i = 0;i < scoreMatrix.length; i++){
             System.out.print(sequence1[i] + "\t");
             for(int j = 0;j < scoreMatrix[0].length; j++){
                System.out.print(scoreMatrix[i][j] + "\t");
             }
-            System.out.println("\n");
+            System.out.print("\n");
         }
     }
 
@@ -182,14 +183,67 @@ public class PairwiseAlignment {
         line2.append(y);
         do {
             if (scoreMatrix[x - 1][y] - 2 == scoreMatrix[x][y]) {
-                line1.insert(0, sequence1[x - 1]);
+                line1.insert(0, sequence1[x]);
                 line2.insert(0, '-');
             } else if (scoreMatrix[x][y - 1] - 2 == scoreMatrix[x][y]) {
                 line1.insert(0, '-');
-                line2.insert(0, sequence2[y - 1]);
+                line2.insert(0, sequence2[y]);
             } else {
-                line1.insert(0, sequence1[x - 1]);
-                line2.insert(0, sequence2[y - 1]);
+                line1.insert(0, sequence1[x]);
+                line2.insert(0, sequence2[y]);
+            }
+            x--;
+            y--;
+        } while (x > 1 && y > 1);
+        line1.insert(0, ':');
+        line1.insert(0, '0');
+        line2.insert(0, ':');
+        line2.insert(0, '0');
+        return new String[] { line1.toString(), line2.toString() };
+    }
+
+    public static String[] tracebackForAffine(int[][] scoreMatrix, String[] sequence1, String[] sequence2) {
+        int x = scoreMatrix.length - 1, y = scoreMatrix[0].length - 1;
+        int max = -1000000000;
+
+        for (int i = 0; i < scoreMatrix.length; i++) {
+            max = Math.max( scoreMatrix[i][scoreMatrix[0].length - 1], max );
+        }
+
+        for (int j = 0; j < scoreMatrix[0].length; j++) {
+            max = Math.max( scoreMatrix[scoreMatrix.length - 1][j], max );
+        }
+
+        for (int i = 0; i < scoreMatrix.length; i++) {
+            if ( scoreMatrix[i][scoreMatrix[0].length - 1] == max ) {
+                x = i;
+            }
+        }
+
+        for (int j = 0; j < scoreMatrix[0].length; j++) {
+            if ( scoreMatrix[scoreMatrix.length - 1][j] == max ) {
+                y = j;
+            }
+        }
+
+        System.out.println("\nMax score : " + max + "\n");
+
+        StringBuffer line1 = new StringBuffer();
+        StringBuffer line2 = new StringBuffer();
+        line1.append(':');
+        line1.append(x);
+        line2.append(':');
+        line2.append(y);
+        do {
+            if ( makeAffineGapScoreX(scoreMatrix, x - 1, y - 1) + MatchScore == scoreMatrix[x][y]) {
+                line1.insert(0, sequence1[x]);
+                line2.insert(0, '-');
+            } else if ( makeAffineGapScoreY(scoreMatrix, x - 1, y - 1) + MatchScore == scoreMatrix[x][y]) {
+                line1.insert(0, '-');
+                line2.insert(0, sequence2[y]);
+            } else {
+                line1.insert(0, sequence1[x]);
+                line2.insert(0, sequence2[y]);
             }
             x--;
             y--;
@@ -211,7 +265,7 @@ public class PairwiseAlignment {
           sb.append(x.charAt(i) == y.charAt(i) ? "|" : " ");
         sb.append("  ");
         String z = sb.toString();
-        int width = 50;
+        int width = 120;
         int i = -1;
         while (++i * width < x.length()) {
           System.out.println(x.substring(i * width,

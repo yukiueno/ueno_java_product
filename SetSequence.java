@@ -54,6 +54,8 @@ public class SetSequence {
     public static String[] getSequenceByOptionType(String option) {
         String[] sequence = makeRandomSequence(SIZE);
         switch ( option ) {
+        case "-local":
+            break;
         case "-global":
             break;
         case "-affine":
