@@ -37,9 +37,9 @@ public class SetSequence {
             break;
         case 2:
             if ( options[0].equals("-global") ){
-                sequence = getSequenceByOptionType(options[1]);
+                sequence = makeRandomSequence(SIZE);
             } else if ( options[0].equals("-affine") ) {
-                sequence = getSequenceByOptionType(options[1]);
+                sequence = makeRandomSequence(SIZE);
             } else {
                 sequence = getSequenceByOptionType(options[0]);
             }
@@ -124,7 +124,11 @@ public class SetSequence {
     }
 
     public static String[] makeRandomSequence(int array_size) {
-        int random_array_size = new Random().nextInt(array_size);
+        int random_array_size = 0;
+        do {
+            random_array_size = new Random().nextInt(array_size);
+        } while ( random_array_size < 3 );
+
         return makeSequence(random_array_size);
     }
 }
