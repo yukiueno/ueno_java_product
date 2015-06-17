@@ -10,9 +10,22 @@ public class LocalAlignment {
         return (t > s ? t : s);
     }
 
+    public static String[] alignment( String[] sequence1, String[] sequence2) {
+        int[][] scoreMatrix = makeScoreMatrix(sequence1, sequence2);
+        String[] traceback = traceback(scoreMatrix, sequence1, sequence2);
+        return traceback;
+    }
+
     public static int[][] initialize(int scoreMatrix[][]) {
         for(int i = 1;i < scoreMatrix.length; i++){ scoreMatrix[i][0] = 0; }
         for(int j = 1;j < scoreMatrix[0].length; j++){ scoreMatrix[0][j] = 0; }
+        return scoreMatrix;
+    }
+
+    public static int[][] makeScoreMatrix(String[] sequence1, String[] sequence2) {
+        int[][] scoreMatrix = new int[sequence1.length][sequence2.length];
+        initialize(scoreMatrix);
+        makeScore(scoreMatrix, sequence1, sequence2);
         return scoreMatrix;
     }
 

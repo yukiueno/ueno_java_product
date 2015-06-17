@@ -14,64 +14,29 @@ public class PairwiseAlignment {
 
         String[] sequence1 = SetSequence.getSequenceByOption(args);
         String[] sequence2 = SetSequence.getSequenceByOption2(args);
-
-        int[][] scoreMatrix = makeScoreMatrix(sequence1, sequence2);
         String[] traceback = new String[]{};
 
         if ( LOCAL ) {
-            traceback = LocalAlignment.traceback(scoreMatrix, sequence1, sequence2);
+            if ( AFFINE ) {
+                traceback = AffineGapLocalAlignment.alignment(sequence1, sequence2);
+            } else {
+                traceback = LocalAlignment.alignment(sequence1, sequence2);
+            }
         } else if ( GLOBAL ) {
-            traceback = GlobalAlignment.traceback(scoreMatrix, sequence1, sequence2);
+            if ( AFFINE ) {
+                traceback = AffineGapGlobalAlignment.alignment(sequence1, sequence2);
+            }
+            else {
+                traceback = GlobalAlignment.alignment(sequence1, sequence2);
+            }
         } else if ( AFFINE ) {
-            traceback = AffineGapMatrix.traceback(scoreMatrix, sequence1, sequence2);
+            traceback = AffineGapGlobalAlignment.alignment(sequence1, sequence2);
         } else {
-            traceback = LocalAlignment.traceback(scoreMatrix, sequence1, sequence2);
+            System.out.println("No option. So do alignment by local.");
+            traceback = LocalAlignment.alignment(sequence1, sequence2);
         }
 
         printTrace(traceback);
-    }
-
-    public static int max_of_three(int x, int y, int z) {
-        int t = x > y ? x : y;
-        return (t > z ? t : z);
-    }
-
-    public static int max_of_four(int x, int y, int z, int w) {
-        int t = x > y ? x : y;
-        int s = z > w ? z : w;
-        return (t > s ? t : s);
-    }
-
-    public static int[][] initializeScoreMatrix(int scoreMatrix[][]) {
-        scoreMatrix[0][0] = 0;
-        if ( LOCAL ){
-            LocalAlignment.initialize(scoreMatrix);
-        } else if ( GLOBAL ) {
-            GlobalAlignment.initialize(scoreMatrix);
-        } else if ( AFFINE ) {
-            AffineGapMatrix.initialize(scoreMatrix);
-        } else {
-            System.out.println("No option. So do alignment by local.");
-            LocalAlignment.initialize(scoreMatrix);
-        }
-        return scoreMatrix;
-    }
-
-    public static int[][] makeScoreMatrix(String[] sequence1, String[] sequence2) {
-        int[][] scoreMatrix = new int[sequence1.length][sequence2.length];
-        initializeScoreMatrix(scoreMatrix);
-
-        if ( LOCAL  ) {
-            LocalAlignment.makeScore(scoreMatrix, sequence1, sequence2);
-        } else if ( GLOBAL ) {
-            GlobalAlignment.makeScore(scoreMatrix, sequence1, sequence2);
-        } else if ( AFFINE ) {
-            AffineGapMatrix.makeScore(scoreMatrix, sequence1, sequence2);
-        } else {
-            LocalAlignment.makeScore(scoreMatrix, sequence1, sequence2);
-        }
-        printScoreMatrix(scoreMatrix, sequence1, sequence2);
-        return scoreMatrix;
     }
 
     public static void printScoreMatrix(int scoreMatrix[][], String[] sequence1, String[] sequence2) {
