@@ -129,6 +129,6 @@ public class SetSequence {
             random_array_size = new Random().nextInt(array_size);
         } while ( random_array_size < 3 );
 
-        return makeSequence(array_size);
+        return makeSequence(random_array_size);
     }
 }
