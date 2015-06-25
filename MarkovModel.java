@@ -21,8 +21,8 @@ public class MarkovModel {
 
     static double[][] a =
         {   // "H"  "L"
-            { 0.5, 0.5 }, // "H"
-            { 0.4, 0.6 }, // "L"
+            { 0.4, 0.6 }, // "H"
+            { 0.5, 0.5 }, // "L"
         };
 
     static double[][] output =
@@ -31,8 +31,10 @@ public class MarkovModel {
             { 0.3, 0.3, 0.2, 0.2 }, // "L"
         };
 
+    static int[] yazirusi = {};
+
     public static void main (String[] args) {
-        String[] sequence = SetSequence.getSequenceByOption2(args);
+        String[] sequence = SetSequence.getSequenceByOption(args);
         for (int i = 0; i < sequence.length; i++) {
             System.out.print(sequence[i]);
         }
@@ -46,11 +48,14 @@ public class MarkovModel {
 
         printMatrix(v);
         System.out.println();
+        for (int i = 1; i < sequence.length; i++) {
+            System.out.print(yazirusi[i] + "\t");
+        }
+        System.out.println();
     }
 
     public static double[][] initializeViterbi(String[] sequence) {
         double[][] v = new double[a.length][sequence.length];
-        double[][] f = new double[a.length][sequence.length];
         for (int k = 0; k < a.length; k++) {
             if (sequence[1].equals("A")) {
                 v[k][0] = Math.log10(output_A) + Math.log10(initial_probability_a0K);
@@ -68,7 +73,7 @@ public class MarkovModel {
     }
 
     public static double[][] viterbi(String[] sequence, double[][] v) {
-        double[] b = new double[sequence.length];
+        yazirusi = new int[sequence.length];
         for (int i = 1; i < sequence.length; i++) {
             for (int k = 0; k < a.length; k++) {
                 if (sequence[i].equals("A")) {
@@ -89,10 +94,11 @@ public class MarkovModel {
 
     public static double viterbiAlgorism(double[][] v, int i, int k) {
         double maxV = -1000000000;
-        for (int l = 0; l < k; l++) {
-            v[l][i] = v[l][i-1] + Math.log10(a[l][k]);
-            if (maxV < v[l][i]) {
-                maxV = v[l][i];
+        for (int l = 0; l < a.length; l++) {
+            if (maxV < v[k][i-1] + Math.log10(a[l][k])) {
+                v[k][i] = v[l][i-1] + Math.log10(a[l][k]);
+                maxV = v[k][i];
+                yazirusi[i] = l;
             }
         }
         return maxV;
