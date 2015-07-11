@@ -6,7 +6,7 @@ import java.io.IOException;
 
 public class SetSequence {
     static boolean LOCAL = true;
-    static int SIZE = 20;
+    static int SIZE = 1000000;
     public static String[] getSequenceByOption(String[] options) {
         String[] sequence = makeRandomSequence(SIZE);
         switch ( options.length ) {
