@@ -12,12 +12,24 @@ public class Dice {
         int[] arr = new int[array_size];
         int[] spots = new int[dice_spots_type.length];
         boolean state = new Random().nextBoolean();
+
+        int[] fair = new int[dice_spots_type.length];
+        double fair_rate = 0;
+        double fair_size = 0;
+        int[] loaded = new int[dice_spots_type.length];
+        double loaded_rate = 0;
+        double loaded_size = 0;
+
         for( int i = 0; i < array_size; i++ ) {
             state = this.changeDice(state);
             if ( state ) {
                 arr[i] = this.makeSpotsOnDice();
+                fair[arr[i]]++;
+                fair_size++;
             } else {
                 arr[i] = this.makeSpotsOnCrooledDice();
+                loaded[arr[i]]++;
+                loaded_size++;
             }
             //System.out.print(arr[i] + " ");
         }
@@ -29,9 +41,20 @@ public class Dice {
                 }
             }
         }
+        System.out.println("\n" + array_size + "回、サイコロを投げる");
+        System.out.println("\n実際に出たサイコロの目の合計から確率を計算");
+
+        System.out.println("\nIn Fair");
         for ( int spot = 0; spot < dice_spots_type.length; spot++ ) {
-            System.out.println(spot + "の数 : " + spots[spot]);
+            fair_rate = (double) fair[spot] / fair_size;
+            System.out.println((spot + 1) + "の確率 : " + fair_rate);
         }
+        System.out.println("\nIn Loaded");
+        for ( int spot = 0; spot < dice_spots_type.length; spot++ ) {
+            loaded_rate = (double) loaded[spot] / loaded_size;
+            System.out.println((spot + 1) + "の確率 : " + loaded_rate);
+        }
+
         return arr;
     }
 

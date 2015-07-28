@@ -6,17 +6,16 @@ public class HMMforFLDice {
     static int stetesNum = 2;
     static int number_of_emission_types = 6;
     static double[] scaling_coefficient;
-    static double[] primaryStateProbability = new double[number_of_emission_types];
 
     static double[][] transition_probabilities =
-        {   // "H"  "L"
-            { 0.5, 0.5 }, // "H"
+        {   // "F"  "L"
+            { 0.5, 0.5 }, // "F"
             { 0.5, 0.5 }, // "L"
         };
 
     static double[][] emission_probabilities =
-        {   // "A"  "T"  "G"  "C"
-            { 0.1, 0.2, 0.2, 0.2, 0.1, 0.2 }, // "H"
+        {   // 1,   2,   3,   4,   5,   6
+            { 0.1, 0.2, 0.2, 0.2, 0.1, 0.2 }, // "F"
             { 0.3, 0.1, 0.2, 0.2, 0.1, 0.1 }, // "L"
         };
 
@@ -30,16 +29,18 @@ public class HMMforFLDice {
         System.out.println();
     }
 
-    public static double[][] baum_welch_algorithm( int[] emissions ) {
+    public static void baum_welch_algorithm( int[] emissions ) {
         int t = 0;
         double[] p = new double[10000000];
         double[] backp = new double[10000000];
         double differ = 1;
         do {
+            /* E-step */
             double[][] f = culculateForwardVariables(emissions);
             double[][] b = culculateBackwardVariables(emissions);
             //printMatrix(f);
             //printMatrix(b);
+
             double[][] intermediate_transition_probability = new double[stetesNum][stetesNum];
             for(int k = 0; k < stetesNum; k++) {
                 for(int l = 0; l < stetesNum; l++) {
@@ -47,6 +48,7 @@ public class HMMforFLDice {
                 }
             }
 
+            /* M-step */
             double[][] Akl = new double[stetesNum][stetesNum];
             for(int k = 0; k < stetesNum; k++) {
                 double sigmaAkl = 0;
@@ -81,28 +83,21 @@ public class HMMforFLDice {
                     emission_probabilities[k][x] = devide( Ekx[k][x], sigmaEkx );
                 }
             }
+
+            /* 収束判定 */
             for(int i = 0; i < emissions.length; i++ ) {
                 p[t] += scaling_coefficient[i];
             }
             if (t != 0 ) differ = Math.log(p[t]) - Math.log(p[t - 1]);
-            for(int k = 0; k < stetesNum; k++) {
-                for(int l = 0; l < stetesNum; l++) {
-                    backp[t] += emission_probabilities[l][emissions[1]] * b[l][1] * transition_probabilities[k][l];
-                }
-            }
-            //System.out.println("back : " + backp[t] + ", likelyhood : " + Math.log(p[t]));
             t++;
         } while ( differ != 0  );
 
         System.out.println("estimation complete!\n\nSummary\n");
         System.out.println("learning steps : " + t);
-        //System.out.println("back : " + backp[t] + ", likelyhood : " + Math.log(p[t]));
         System.out.println("\nTransition");
         printMatrix(transition_probabilities);
         System.out.println("\nEmission");
         printMatrix(emission_probabilities);
-
-        return transition_probabilities;
     }
 
     public static double[][] initializeForwardVariables( int[] emissions  ) {
@@ -132,23 +127,23 @@ public class HMMforFLDice {
         scaling_coefficient = new double[emissions.length];
         for (int i = 1; i < emissions.length; i++) {
             scaling_coefficient[i] = 0;
-            double esum = 0;
-            double fsum = 0;
-            double[] ffsum = new double[stetesNum];
+            double sigma_el = 0;
+            double forward_variable_for_scaling = 0;
+            double[] forward_variable = new double[stetesNum];
             for (int l = 0; l < stetesNum; l++) {
-                esum += emission_probabilities[l][emissions[i]];
+                sigma_el += emission_probabilities[l][emissions[i]];
                 for (int k = 0; k < stetesNum; k++) {
-                    fsum += f[k][i-1] * transition_probabilities[k][l];
-                    ffsum[l] = 0;
+                    forward_variable_for_scaling += f[k][i-1] * transition_probabilities[k][l];
+                    forward_variable[l] = 0;
                 }
             }
-            scaling_coefficient[i] = esum * fsum;
+            scaling_coefficient[i] = sigma_el * forward_variable_for_scaling;
             for (int l = 0; l < stetesNum; l++) {
                 for (int k = 0; k < stetesNum; k++) {
                     f[l][i] = emission_probabilities[l][emissions[i]] * f[k][i-1] * transition_probabilities[k][l];
-                    ffsum[l] += f[k][i-1] * transition_probabilities[k][l];
+                    forward_variable[l] += f[k][i-1] * transition_probabilities[k][l];
                 }
-                f[l][i] = devide( emission_probabilities[l][emissions[i]] * ffsum[l], scaling_coefficient[i] );
+                f[l][i] = devide( emission_probabilities[l][emissions[i]] * forward_variable[l], scaling_coefficient[i] );
             }
         }
         return f;
@@ -157,14 +152,14 @@ public class HMMforFLDice {
     public static double[][] culculateBackwardVariables(int[] emissions ) {
         double[][] b = initializeBackwardVariables( emissions );
         for (int i = emissions.length - 2 ; i > 0; i--) {
-            double sum = 0;
+            double backward_variable = 0;
             for (int k = 0; k < stetesNum; k++) {
-                sum = 0;
+                backward_variable = 0;
                 b[k][i] = 0;
                 for (int l = 0; l < stetesNum; l++) {
-                    sum += emission_probabilities[l][emissions[i+1]] * b[l][i+1] * transition_probabilities[k][l];
+                    backward_variable += emission_probabilities[l][emissions[i+1]] * b[l][i+1] * transition_probabilities[k][l];
                 }
-                b[k][i] = devide( sum, scaling_coefficient[i+1] );
+                b[k][i] = devide( backward_variable, scaling_coefficient[i+1] );
             }
         }
         return b;
