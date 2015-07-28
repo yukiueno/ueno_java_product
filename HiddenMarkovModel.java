@@ -88,7 +88,7 @@ public class HiddenMarkovModel {
                 }
             }
             t++;
-        } while (Math.log10(scaling_coefficient[t]) == Math.log10(scaling_coefficient[t - 1]));
+        } while ( Math.log10(scaling_coefficient[t]) == Math.log10(scaling_coefficient[t - 1]) );
 
         System.out.println("\nTransition");
         printMatrix(transition_probabilities);
