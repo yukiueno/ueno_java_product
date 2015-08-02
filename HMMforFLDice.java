@@ -6,6 +6,7 @@ public class HMMforFLDice {
     static int stetesNum = 2;
     static int number_of_emission_types = 6;
     static double[] scaling_coefficient;
+    static double[][] bb;
 
     static double[][] transition_probabilities =
         {   // "F"  "L"
@@ -22,11 +23,16 @@ public class HMMforFLDice {
 
     public static void main (String[] args) {
         Dice dice = new Dice();
-        int[] diceSpots = dice.roll(30000);
+        int[] diceSpots300 = dice.roll(300);
+        System.out.println();
+        baum_welch_algorithm( diceSpots300 );
+        System.out.println();
 
+        int[] diceSpots30000 = dice.roll(30000);
         System.out.println();
-        baum_welch_algorithm( diceSpots );
+        baum_welch_algorithm( diceSpots30000 );
         System.out.println();
+
     }
 
     public static void baum_welch_algorithm( int[] emissions ) {
@@ -89,15 +95,23 @@ public class HMMforFLDice {
                 p[t] += scaling_coefficient[i];
             }
             if (t != 0 ) differ = Math.log(p[t]) - Math.log(p[t - 1]);
+
+            backp[t] = 0;
+            for (int l = 0; l < stetesNum; l++) {
+                backp[t] += bb[l][1];
+            }
+
             t++;
         } while ( differ != 0  );
 
         System.out.println("estimation complete!\n\nSummary\n");
         System.out.println("learning steps : " + t);
+        System.out.println("\nbackward : forward\n" + backp[t-1] + " : " + p[t-1]);
         System.out.println("\nTransition");
         printMatrix(transition_probabilities);
         System.out.println("\nEmission");
         printMatrix(emission_probabilities);
+        System.out.println("\n------------------------------------------------");
     }
 
     public static double[][] initializeForwardVariables( int[] emissions  ) {
@@ -151,14 +165,20 @@ public class HMMforFLDice {
 
     public static double[][] culculateBackwardVariables(int[] emissions ) {
         double[][] b = initializeBackwardVariables( emissions );
+        bb = initializeBackwardVariables( emissions );
+        double[] p = new double[emissions.length];
         for (int i = emissions.length - 2 ; i > 0; i--) {
             double backward_variable = 0;
+            p[i] += scaling_coefficient[i];
             for (int k = 0; k < stetesNum; k++) {
                 backward_variable = 0;
                 b[k][i] = 0;
+                bb[k][i] = 0;
                 for (int l = 0; l < stetesNum; l++) {
                     backward_variable += emission_probabilities[l][emissions[i+1]] * b[l][i+1] * transition_probabilities[k][l];
                 }
+                bb[k][i] = backward_variable;
+                //if (i == 1 ) System.out.println(backward_variable +" : "+ p[i]);
                 b[k][i] = devide( backward_variable, scaling_coefficient[i+1] );
             }
         }
